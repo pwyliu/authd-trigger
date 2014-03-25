@@ -13,8 +13,8 @@ can optionally set up a password so only authorized clients can start the daemon
 * pgrep, ossec-authd and timeout
 
 ## Installation
-It's just a [Flask](http://flask.pocoo.org/) application. Clone the repo, install the requirements,
-and proxy behind nginx or apache. This app needs to run on the same server as OSSEC
+It's just a Flask application. Clone the repo, install the requirements, and
+proxy behind nginx or apache. This app needs to run on the same server as OSSEC
 so python can access the authd binary.
 
 Use a virtualenv if you don't want to mess up your system python.
@@ -46,26 +46,25 @@ program is, run `which <program_name>`.
 #### Setting a password
 You can set up a password that clients must send in their json post to
 start authd. This doesn't secure `ossec-authd` in any way, it just prevents
-unauthorized clients from starting it.
+unauthorized clients from starting it through `authd-trigger`.
 
-The password is not stored plaintext in `conf.py`. That would be silly. Rather,
-`conf.py` stores a salt and the sha256 hash of the password. If you enable
-`require_password`, you must set both a salt and a hash.
-
-The salt should be a 64 byte string that is hex encoded. The hash is the
-sha256 hash of the salt + the desired password. You can generate both in bash
-like this:
+To enable using a password, first generate a hash of your desired pass with the
+included `generate_hash.py` script. Then edit `conf.py` to set
+`require_password = True` and `password_hash=<your hash>`.
 
 ```bash
-~$ openssl rand -hex 32
-4d2dc590d18d3d870a75f7dc2726a90235c78f0c14f9353fdf9367282ca1bf7a
+# copy/paste the output into conf.py
+# remember this will go in your bash history, so do it somewhere you can erase it.
 
-# if your desired password was "Pants"
-~$ echo -n 4d2dc590d18d3d870a75f7dc2726a90235c78f0c14f9353fdf9367282ca1bf7aPants | sha256sum
-f66ba89ff80cb8c654b714a461e304fae92b12e2baf0ab5be53aa66211998abb  -
+~$ ./generate_hash.py mypassword
+pbkdf2:sha256:5000$UT5uzxt4rgK2fkXA$99ef4a7e9f7b407ad01378701ab6c5802d63507ab43b26c56be5aa81a3e02cd6
 ```
 
-### ossec-authd permissions
+`generate_hash.py` creates a PBKDF2 + HMAC derived key. The hash function is
+sha256 with 5000 iterations. You can tweak this if you like. See the [Werkzeug](http://werkzeug.pocoo.org/docs/utils/)
+documentation for more details.
+
+### Ossec-authd permissions
 The webapp should run as a user in the ossec group, or the group that owns
 `ossec-authd`. In order to launch it as a non root user, the binary needs to
 have the setuid permission on it.
@@ -77,15 +76,15 @@ have the setuid permission on it.
 This kind of sucks but it seems `ossec-authd` will not start without it. If you can
 find a better way please let me know.
 
-## Making API calls.
+## Making API calls
 There's only one API endpoint: `/api/run/authd`. You have to post
 `msg: startauthd` and the password if enabled. That's the only two things the
 server is looking for.
 
-```json
+```javascript
 {
-  'msg': 'startauthd'
-  'password': 'mypassword'
+  "msg": "startauthd"
+  "password": "mypassword"
 }
 ```
 
@@ -109,7 +108,8 @@ With a puppet manifest:
   $authd_port        = '<port>'
   $authd_endpoint    = '/api/run/authd'
   $authd_url         = "https://${ossec_server}:${authd_port}${authd_endpoint}"
-  $authd_json        = '{"msg": "startauthd", "password": "Sekrit"}'
+  $authd_password    = hiera('encrypted-password')
+  $authd_json        = "{\"msg\":\"startauthd\",\"password\":\"${authd_password}\"}"
 
   $authd_triggercmd  = "curl ${authd_url} -X POST -H 'content-type:application/json' -d '${authd_json}'"
   $authd_cmd         = "${authd_triggercmd} && sleep 5 && bin/agent-auth -m ${ossec_server_ip}"

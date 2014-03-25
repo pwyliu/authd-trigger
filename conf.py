@@ -9,12 +9,12 @@ TIMEOUT_DURATION = '15m'
 # Password Settings
 #-----------------------------------------------------------------------------
 # Set to "True" to require a password.
-# If you require a password you must set password salt and password hash.
-# The salt and hash must both be hex encoded. See the README.
+# If you require a password, you must generate a password hash by running
+# generate_hash.py. See README.md for more details.
 #
 # This is not really like a super cryptographically secure way to do this.
 # Don't do this in a high security environment
 # ----------------------------------------------------------------------------
 require_password = False
-password_salt = 'set_me'  # openssl rand -hex 32
-password_hash = 'set_me'  # echo -n <my_salt_here><my_pass_here> | sha256sum
+# e.g. password_hash = 'pbkdf2:sha256:5000$LSiB0lZ3oRILcjVq$9687738372815171ab910cd35bd40e54a37174e548742eb5417177f3b2b5bc77'
+password_hash = ''

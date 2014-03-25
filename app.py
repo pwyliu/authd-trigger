@@ -1,6 +1,6 @@
 from flask import Flask, request, abort, jsonify
 import subprocess
-import hashlib
+from werkzeug.security import check_password_hash
 import conf
 
 app = Flask(__name__)
@@ -23,10 +23,7 @@ def start_authd():
     if conf.require_password:
         if password is None:
             abort(403)
-        password_hash = hashlib.sha256(
-            conf.password_salt.encode()+password.encode()
-        ).hexdigest()
-        if password_hash != conf.password_hash:
+        if not check_password_hash(conf.password_hash, password):
             abort(403)
 
     # command check
