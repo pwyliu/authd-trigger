@@ -1,12 +1,12 @@
 # authd-trigger
 [ossec-authd](http://ossec-docs.readthedocs.org/en/latest/programs/ossec-authd.html) is useful, but you can't leave it running all the time because
-it eats a ton of CPU and has no authentication or authorization. This poses a
-challenge for automating agent registration.
+it eats a ton of CPU and has no authentication. This poses a challenge for
+automating agent registration.
 
 Authd-trigger solves this problem in a super dumb way. It lets you remotely start
-`ossec-authd` by making an HTTP POST to an api endpoint. After a set amount of
-time (by default 15 minutes) the authd process is shut down. You can optionally
-set up a password so only authorized clients can start the daemon.
+`ossec-authd` by making an HTTP POST to an api. After a set amount of
+time (by default 15 minutes) the authd process is shut down automatically. You
+can optionally set up a password so only authorized clients can start the daemon.
 
 ## Dependencies
 * Python 2.7+
@@ -14,10 +14,10 @@ set up a password so only authorized clients can start the daemon.
 
 ## Installation
 It's just a [Flask](http://flask.pocoo.org/) application. Clone the repo, install the requirements,
-and proxy behind nginx or apache. This needs to run on the same server as OSSEC
+and proxy behind nginx or apache. This app needs to run on the same server as OSSEC
 so python can access the authd binary.
 
-Use a virtualenv if you don't want to mess up your system Python.
+Use a virtualenv if you don't want to mess up your system python.
 
 ```bash
 git clone git@github.com:pwyliu/authd-trigger.git
@@ -48,7 +48,7 @@ You can set up a password that clients must send in their json post to
 start authd. This doesn't secure `ossec-authd` in any way, it just prevents
 unauthorized clients from starting it.
 
-The plaintext password is not stored in `conf.py`. That would be silly. Rather,
+The password is not stored plaintext in `conf.py`. That would be silly. Rather,
 `conf.py` stores a salt and the sha256 hash of the password. If you enable
 `require_password`, you must set both a salt and a hash.
 
@@ -84,8 +84,8 @@ server is looking for.
 
 ```json
 {
-  msg: startauthd
-  password: mypassword
+  'msg': 'startauthd'
+  'password': 'mypassword'
 }
 ```
 
